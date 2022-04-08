@@ -1,108 +1,129 @@
 package ua.edu.znu.booking;
 
-import io.appium.java_client.MobileElement;
-import io.appium.java_client.TouchAction;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.options.UiAutomator2Options;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.PointerInput;
+import org.openqa.selenium.interactions.Sequence;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
-import static io.appium.java_client.touch.offset.PointOption.point;
+import java.util.List;
 
 /**
  * Test of input data entering.
  */
 public class InputTest {
 
-    private static AndroidDriver<MobileElement> driver;
+    private static AndroidDriver driver;
 
     @BeforeAll
     public static void setUp() throws MalformedURLException {
-        DesiredCapabilities desiredCapabilities = new DesiredCapabilities();
-        desiredCapabilities.setCapability("platformName", "Android");
-        desiredCapabilities.setCapability("appium:platformVersion", "10.0");
-        desiredCapabilities.setCapability("appium:automationName", "UiAutomator2");
-        desiredCapabilities.setCapability("appium:deviceName", "Android10Phone");
-        desiredCapabilities.setCapability("appium:app", "e:\\Booking_31.2.apk");
-        desiredCapabilities.setCapability("appium:ensureWebviewsHavePages", true);
-        desiredCapabilities.setCapability("appium:nativeWebScreenshot", true);
-        desiredCapabilities.setCapability("appium:newCommandTimeout", 3600);
-        desiredCapabilities.setCapability("appium:connectHardwareKeyboard", true);
 
+        UiAutomator2Options options = new UiAutomator2Options()
+                .setDeviceName("Android10Phone")
+                .setApp(System.getProperty("user.dir") + "\\apps\\Booking_31.2.apk")
+                .eventTimings();
         URL remoteUrl = new URL("http://127.0.0.1:4723/wd/hub");
-
-        driver = new AndroidDriver<>(remoteUrl, desiredCapabilities);
+        driver = new AndroidDriver(remoteUrl, options);
     }
 
     @Test
     public void sampleTest() {
-        MobileElement el1 = driver.findElementByAccessibilityId("Перейти вгору");
-        el1.click();
-        MobileElement el2 = driver.findElementById("com.booking:id/facet_search_box_accommodation_destination");
-        el2.click();
-        MobileElement el3 = driver.findElementById("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content");
-        el3.sendKeys("Лондон");
-        MobileElement el4 = driver.findElementByXPath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]");
-        el4.click();
+        String accommodationDestination = "Лондон";
+        String expectedRoomAndGuestNumber = "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина";
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        /*Close registration window*/
+        WebElement registrationCloseButton = getElementWithWait(wait, By.xpath("//android.widget.ImageButton[@content-desc=\"Перейти вгору\"]"));
+        registrationCloseButton.click();
+
+        /*Accommodation destination input*/
+        WebElement accommodationDestinationField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_destination"));
+        accommodationDestinationField.click();
+        WebElement accommodationDestinationInput = getElementWithWait(wait, By.id("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content"));
+        accommodationDestinationInput.sendKeys(accommodationDestination);
+        WebElement accommodationDestinationPropose = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
+        accommodationDestinationPropose.click();
+
+        /*Accommodation dates input*/
+        /*Implicit wait before calendar appearing*/
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
         LocalDate currentDate = LocalDate.now();
         String currentDateString = currentDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        MobileElement el5 = driver.findElementByAccessibilityId(currentDateString);
-        el5.click();
+        WebElement startDate = driver.findElement(AppiumBy.accessibilityId(currentDateString));
+        startDate.click();
         LocalDate currentDatePlus5 = currentDate.plusDays(5);
         String currentDatePlus5String = currentDatePlus5.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        MobileElement el6 = driver.findElementByAccessibilityId(currentDatePlus5String);
-        el6.click();
-        MobileElement el7 = driver.findElementById("com.booking:id/facet_date_picker_confirm");
-        el7.click();
-        MobileElement el8 = driver.findElementById("com.booking:id/facet_search_box_accommodation_occupancy");
-        el8.click();
-        MobileElement el9 = driver.findElementByXPath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]");
-        el9.click();
-        MobileElement el10 = driver.findElementByXPath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]");
-        el10.click();
-        (new TouchAction<>(driver))
-                .press(point(442, 770))
-                .moveTo(point(442, 407))
-                .release()
-                .perform();
-        (new TouchAction<>(driver))
-                .press(point(355, 741))
-                .moveTo(point(337, 603))
-                .release()
-                .perform();
-        MobileElement el11 = driver.findElementById("android:id/button1");
-        el11.click();
-        MobileElement el12 = driver.findElementByXPath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]");
-        el12.click();
-        MobileElement el13 = driver.findElementById("com.booking:id/group_config_apply_button");
-        el13.click();
+        WebElement endDate = driver.findElement(AppiumBy.accessibilityId(currentDatePlus5String));
+        endDate.click();
+        WebElement accommodationDatesConfirmButton = getElementWithWait(wait, By.id("com.booking:id/facet_date_picker_confirm"));
+        accommodationDatesConfirmButton.click();
+
+        /*Occupancy input*/
+        WebElement accommodationOccupancyField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
+        accommodationOccupancyField.click();
+        WebElement adultsNumberInput = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        adultsNumberInput.click();
+        WebElement childrenNumberInput = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        childrenNumberInput.click();
+        /*Child age NumberPicker swipe*/
+        WebElement source = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
+        Point numberPickerLocation = source.getLocation();   //99,433
+        Point swipeStart = numberPickerLocation.moveBy(270, 350);   //370,780
+        Point swipeEnd = numberPickerLocation.moveBy(270, 100);     //370,475
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipeAge = new Sequence(finger, 1);
+        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), swipeStart.x, swipeStart.y));
+        swipeAge.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(700), PointerInput.Origin.viewport(), swipeEnd.x, swipeEnd.y));
+        swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        driver.perform(List.of(swipeAge));
+
+        WebElement childAgeInputConfirmButton = getElementWithWait(wait, By.id("android:id/button1"));
+        childAgeInputConfirmButton.click();
+        WebElement roomNumberInput = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        roomNumberInput.click();
+        WebElement occupancyConfirmButton = getElementWithWait(wait, By.id("com.booking:id/group_config_apply_button"));
+        occupancyConfirmButton.click();
 
         /*Assert destination is "London"*/
-        MobileElement el14 = el2.findElementById("com.booking:id/facet_search_box_basic_field_label");
-        String destination = el14.getText();
-        Assertions.assertEquals("Лондон", destination);
+        accommodationDestinationField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_destination"));
+        WebElement accommodationDestinationFieldTextView = accommodationDestinationField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
+        String destination = accommodationDestinationFieldTextView.getText();
+        Assertions.assertEquals(accommodationDestination, destination);
 
         /*Assert accommodation start date is now and end date is now + 5 days*/
-        MobileElement el15 = driver.findElementById("com.booking:id/facet_search_box_accommodation_dates");
-        MobileElement el16 = el15.findElementById("com.booking:id/facet_search_box_basic_field_label");
-        String accommodationDates = el16.getText();
+        WebElement accommodationDatesField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_dates"));
+        WebElement accommodationDatesFieldTextView = accommodationDatesField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
+        String accommodationDates = accommodationDatesFieldTextView.getText();
         String expectedCurrentDateString = currentDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
         String expectedCurrentDatePlus5String = currentDatePlus5.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
         String expectedAccommodationDates = expectedCurrentDateString + " - " + expectedCurrentDatePlus5String;
         Assertions.assertEquals(expectedAccommodationDates, accommodationDates);
 
         /*Assert accommodation occupancy is "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина"*/
-        MobileElement el17 = el8.findElementById("com.booking:id/facet_search_box_basic_field_label");
-        String roomAndGuestNumber = el17.getText();
-        String expectedRoomAndGuestNumber = "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина";
+        accommodationOccupancyField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
+        WebElement accommodationOccupancyFieldTextView = accommodationOccupancyField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
+        String roomAndGuestNumber = accommodationOccupancyFieldTextView.getText();
         Assertions.assertEquals(expectedRoomAndGuestNumber, roomAndGuestNumber);
+    }
+
+    private WebElement getElementWithWait(WebDriverWait wait, By locator) {
+        return wait.until(ExpectedConditions
+                .presenceOfElementLocated(locator));
     }
 
     @AfterAll
