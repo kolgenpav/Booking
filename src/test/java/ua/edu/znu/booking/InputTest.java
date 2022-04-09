@@ -33,6 +33,7 @@ public class InputTest {
     public static void setUp() throws MalformedURLException {
 
         UiAutomator2Options options = new UiAutomator2Options()
+                .setPlatformVersion("10.0")
                 .setDeviceName("Android10Phone")
                 .setApp(System.getProperty("user.dir") + "\\apps\\Booking_31.2.apk")
                 .eventTimings();
@@ -41,21 +42,21 @@ public class InputTest {
     }
 
     @Test
-    public void sampleTest() {
+    public void dataInputTest() {
         String accommodationDestination = "Лондон";
         String expectedRoomAndGuestNumber = "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина";
+        String expectedChildAge = "1 рік";
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         /*Close registration window*/
-        WebElement registrationCloseButton = getElementWithWait(wait, By.xpath("//android.widget.ImageButton[@content-desc=\"Перейти вгору\"]"));
+        WebElement registrationCloseButton = getElementWithWait(AppiumBy.accessibilityId("Перейти вгору"));
         registrationCloseButton.click();
 
         /*Accommodation destination input*/
-        WebElement accommodationDestinationField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_destination"));
+        WebElement accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
         accommodationDestinationField.click();
-        WebElement accommodationDestinationInput = getElementWithWait(wait, By.id("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content"));
+        WebElement accommodationDestinationInput = getElementWithWait(By.id("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content"));
         accommodationDestinationInput.sendKeys(accommodationDestination);
-        WebElement accommodationDestinationPropose = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
+        WebElement accommodationDestinationPropose = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
         accommodationDestinationPropose.click();
 
         /*Accommodation dates input*/
@@ -69,18 +70,19 @@ public class InputTest {
         String currentDatePlus5String = currentDatePlus5.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
         WebElement endDate = driver.findElement(AppiumBy.accessibilityId(currentDatePlus5String));
         endDate.click();
-        WebElement accommodationDatesConfirmButton = getElementWithWait(wait, By.id("com.booking:id/facet_date_picker_confirm"));
+        WebElement accommodationDatesConfirmButton = getElementWithWait(By.id("com.booking:id/facet_date_picker_confirm"));
         accommodationDatesConfirmButton.click();
 
         /*Occupancy input*/
-        WebElement accommodationOccupancyField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
+        WebElement accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         accommodationOccupancyField.click();
-        WebElement adultsNumberInput = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        WebElement adultsNumberInput = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
         adultsNumberInput.click();
-        WebElement childrenNumberInput = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        WebElement childrenNumberInput = getElementWithWait( By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
         childrenNumberInput.click();
+
         /*Child age NumberPicker swipe*/
-        WebElement source = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
+        WebElement source = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
         Point numberPickerLocation = source.getLocation();   //99,433
         Point swipeStart = numberPickerLocation.moveBy(270, 350);   //370,780
         Point swipeEnd = numberPickerLocation.moveBy(270, 100);     //370,475
@@ -92,21 +94,26 @@ public class InputTest {
         swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
         driver.perform(List.of(swipeAge));
 
-        WebElement childAgeInputConfirmButton = getElementWithWait(wait, By.id("android:id/button1"));
+        WebElement childAgeInputConfirmButton = getElementWithWait(By.id("android:id/button1"));
         childAgeInputConfirmButton.click();
-        WebElement roomNumberInput = getElementWithWait(wait, By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+
+        /*Assert child age is  "1 рік"*/
+        WebElement childAgeInfo = getElementWithWait(By.id("com.booking:id/group_config_child_age_row_button"));
+        String childAge = childAgeInfo.getText();
+        Assertions.assertEquals(expectedChildAge, childAge);
+        WebElement roomNumberInput = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
         roomNumberInput.click();
-        WebElement occupancyConfirmButton = getElementWithWait(wait, By.id("com.booking:id/group_config_apply_button"));
+        WebElement occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
         occupancyConfirmButton.click();
 
         /*Assert destination is "London"*/
-        accommodationDestinationField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_destination"));
+        accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
         WebElement accommodationDestinationFieldTextView = accommodationDestinationField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String destination = accommodationDestinationFieldTextView.getText();
         Assertions.assertEquals(accommodationDestination, destination);
 
         /*Assert accommodation start date is now and end date is now + 5 days*/
-        WebElement accommodationDatesField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_dates"));
+        WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         WebElement accommodationDatesFieldTextView = accommodationDatesField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String accommodationDates = accommodationDatesFieldTextView.getText();
         String expectedCurrentDateString = currentDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
@@ -115,13 +122,14 @@ public class InputTest {
         Assertions.assertEquals(expectedAccommodationDates, accommodationDates);
 
         /*Assert accommodation occupancy is "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина"*/
-        accommodationOccupancyField = getElementWithWait(wait, By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
+        accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         WebElement accommodationOccupancyFieldTextView = accommodationOccupancyField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String roomAndGuestNumber = accommodationOccupancyFieldTextView.getText();
         Assertions.assertEquals(expectedRoomAndGuestNumber, roomAndGuestNumber);
     }
 
-    private WebElement getElementWithWait(WebDriverWait wait, By locator) {
+    private WebElement getElementWithWait(By locator) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         return wait.until(ExpectedConditions
                 .presenceOfElementLocated(locator));
     }
