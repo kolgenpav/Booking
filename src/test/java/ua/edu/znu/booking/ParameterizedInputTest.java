@@ -6,16 +6,11 @@ import io.appium.java_client.android.options.UiAutomator2Options;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
@@ -51,21 +46,12 @@ public class ParameterizedInputTest {
         registrationCloseButton.click();
     }
 
-    @BeforeEach
-    public void clearFields() {
-        WebElement accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
-        accommodationDestinationField.clear();
-        WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
-        accommodationDatesField.clear();
-
-    }
-
     /**
      * Check data entering for accommodation destination.
      */
-    @Disabled
-    @ParameterizedTest
-    @ValueSource(strings = {"Лондон", "Стокгольм", "Гданськ"})
+//    @Disabled
+    @ParameterizedTest(name = "accommodation destination ={0}")
+    @ValueSource(strings = {"Лондон", "Вестерос"})
     public void accommodationDestinationTest(String accommodationDestination) {
         /*Accommodation destination input*/
         WebElement accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
@@ -90,22 +76,38 @@ public class ParameterizedInputTest {
     /**
      * Check accommodation start and end dates entering.
      */
-    @Disabled
-    @ParameterizedTest
-    @ValueSource(ints = {1, 5, 10})
-    public void accommodationDatesTest(int daysShift) {
+//    @Disabled
+    @ParameterizedTest(name = "start date shift ={0}, end date shift={1}")
+    @CsvSource({
+            "0, 30",
+            "479, 1"
+    })
+    public void accommodationDatesTest(int startDateDaysShift, int endDateDaysShift) {
         WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         accommodationDatesField.click();
         /*Implicit wait before calendar appearing*/
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
-        LocalDate currentDate = LocalDate.now();
-        String currentDateString = currentDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        WebElement startDate = driver.findElement(AppiumBy.accessibilityId(currentDateString));
-        startDate.click();
-        LocalDate DaysShift = currentDate.plusDays(daysShift);
-        String currentDatePlusDaysShiftString = DaysShift.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        WebElement endDate = driver.findElement(AppiumBy.accessibilityId(currentDatePlusDaysShiftString));
-        endDate.click();
+        LocalDate startDate = LocalDate.now().plusDays(startDateDaysShift);
+        String startDateString = startDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        LocalDate endDate;
+        int startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
+        while (startDateElements == 0) {   //swipe if start date is absent
+            WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+            makeSwipe(calendar, 480, 560, 480, 198);
+            startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
+        }
+        WebElement startDateElement = driver.findElement(AppiumBy.accessibilityId(startDateString));
+        startDateElement.click();
+        endDate = startDate.plusDays(endDateDaysShift);
+        String endDatePlusDaysShiftString = endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        int endDateElements = driver.findElements(AppiumBy.accessibilityId(endDatePlusDaysShiftString)).size();
+        while (endDateElements == 0) { //swipe if end date is absent
+            WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+            makeSwipe(calendar, 480, 560, 480, 198);
+            endDateElements = driver.findElements(AppiumBy.accessibilityId(endDatePlusDaysShiftString)).size();
+        }
+        WebElement endDateElement = driver.findElement(AppiumBy.accessibilityId(endDatePlusDaysShiftString));
+        endDateElement.click();
         WebElement accommodationDatesConfirmButton = getElementWithWait(By.id("com.booking:id/facet_date_picker_confirm"));
         accommodationDatesConfirmButton.click();
 
@@ -113,36 +115,32 @@ public class ParameterizedInputTest {
         accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         WebElement accommodationDatesFieldTextView = accommodationDatesField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String accommodationDates = accommodationDatesFieldTextView.getText();
-        String expectedCurrentDateString = currentDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
-        String expectedCurrentDatePlusDaysShiftString = DaysShift.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
-        String expectedAccommodationDates = expectedCurrentDateString + " - " + expectedCurrentDatePlusDaysShiftString;
+        String expectedStartDateString = startDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
+        String expectedEndDateString = endDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
+        String expectedAccommodationDates = expectedStartDateString + " - " + expectedEndDateString;
         Assertions.assertEquals(expectedAccommodationDates, accommodationDates);
     }
 
     /**
      * Check rooms number, adults number, children number and first child age entering.
      */
+    //TODO Learn how use an array for parameters - see VarargsAggregator https://github.com/junit-team/junit5/issues/2256
 //    @Disabled
-    @ParameterizedTest
+    @ParameterizedTest(name = "rooms: {0}, adults: {1}, children: {2}, child age: {3}")
     @CsvSource({
-            "1, 1, 1",
-            "2, 4, 2",
-            "5, 5, 5",
-            "21, 21, 3",
-            "24, 24, 2",
-            "30, 30, 10"
+            "1, 1, 0, ''",
+            "1, 30, 10, '< 1 рік'",
+            "10, 10, 1, '17 років'"
     })
-    public void occupancyTest(int roomsNumber, int adultsNumber, int childrenNumber) {
-        String expectedRoomAndGuestNumber;
-        //TODO Replace by extract numbers and compare.
-        if (roomsNumber == 1 || roomsNumber % 20 == 1 || childrenNumber % 20 == 1) {
-            expectedRoomAndGuestNumber = roomsNumber + " номер " + '\u00b7' + " " + adultsNumber + " дорослий " + '\u00b7' + " " + childrenNumber + " дитина";
-        } else if (roomsNumber < 5 || (roomsNumber > 21 && roomsNumber < 25)) {
-            expectedRoomAndGuestNumber = roomsNumber + " номери " + '\u00b7' + " " + adultsNumber + " дорослих " + '\u00b7' + " " + childrenNumber + " дітей";
-        } else {
-            expectedRoomAndGuestNumber = roomsNumber + " номерів " + '\u00b7' + " " + adultsNumber + " дорослих " + '\u00b7' + " " + childrenNumber + " дітей";
+    public void occupancyTest(int roomsNumber, int adultsNumber, int childrenNumber, String childAge) {
+        String[] childrenAges = {"< 1 рік", "1 рік", "2 роки", "3 роки", "4 роки", "5 років", "6 років", "7 років", "8 років", "9 років", "10 років", "11 років", "12 років", "13 років", "14 років", "15 років", "16 років", "17 років"};
+        int ageIndex = -1;
+        for (int k = 0; k < childrenAges.length; k++) {
+            if (childAge.equals(childrenAges[k])) {
+                ageIndex = k;
+                break;
+            }
         }
-        String expectedChildAge = "1 рік";
 
         WebElement accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         accommodationOccupancyField.click();
@@ -156,28 +154,21 @@ public class ParameterizedInputTest {
         for (int i = 0; i < childrenNumber; i++) {
             WebElement childrenNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             childrenNumberAdd.click();
-
-            /*Child age NumberPicker swipe*/
-            WebElement source = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
-            Point numberPickerLocation = source.getLocation();   //99,433
-            Point swipeStart = numberPickerLocation.moveBy(270, 350);   //370,780
-            Point swipeEnd = numberPickerLocation.moveBy(270, 100);     //370,475
-            PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-            Sequence swipeAge = new Sequence(finger, 1);
-            swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), swipeStart.x, swipeStart.y));
-            swipeAge.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-            swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(700), PointerInput.Origin.viewport(), swipeEnd.x, swipeEnd.y));
-            swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-            driver.perform(List.of(swipeAge));
-
+            for (int j = 0; j < ageIndex + 1; j++) {
+                /*Child age NumberPicker swipe*/
+                WebElement numberPicker = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
+                makeSwipe(numberPicker, 270, 350, 270, 225);
+            }
             WebElement childAgeInputConfirmButton = getElementWithWait(By.id("android:id/button1"));
             childAgeInputConfirmButton.click();
         }
 
-        /*Assert child age is  "1 рік"*/
-        WebElement childAgeInfo = getElementWithWait(By.id("com.booking:id/group_config_child_age_row_button"));
-        String childAge = childAgeInfo.getText();
-        Assertions.assertEquals(expectedChildAge, childAge);
+        /*Assert child age equals the first child age parameter*/
+        if (childrenNumber > 0) {
+            WebElement childAgeInfo = getElementWithWait(By.id("com.booking:id/group_config_child_age_row_button"));
+            String actualChildAge = childAgeInfo.getText();
+            Assertions.assertEquals(childAge, actualChildAge);
+        }
 
         WebElement roomsNumberAdd;
         for (int i = 0; i < roomsNumber - 1; i++) {
@@ -188,13 +179,16 @@ public class ParameterizedInputTest {
         WebElement occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
         occupancyConfirmButton.click();
 
-        /*Assert accommodation occupancy is "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина"*/
+        /*Get from accommodation occupancy string rooms number, adults number and children number*/
         accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         WebElement accommodationOccupancyFieldTextView = accommodationOccupancyField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String roomAndGuestNumber = accommodationOccupancyFieldTextView.getText();
-//        Assertions.assertEquals(expectedRoomAndGuestNumber, roomAndGuestNumber);  //Здесь заканчивается параметризированный метод
+        String[] roomsAndGuestsNumberWords = roomAndGuestNumber.split(" ");
+        int actualRoomsNumber = Integer.parseInt(roomsAndGuestsNumberWords[0]);
+        int actualAdultsNumber = Integer.parseInt(roomsAndGuestsNumberWords[3]);
+        int actualChildrenNumber = Integer.parseInt(roomsAndGuestsNumberWords[6]);
 
-        /*Subtract addition for adults number, children number and rooms number*/
+        /*Subtract addition for rooms number, adults number and children number*/
         accommodationOccupancyField.click();
         WebElement roomsNumberSubtract;
         for (int i = 0; i < roomsNumber - 1; i++) {
@@ -216,7 +210,9 @@ public class ParameterizedInputTest {
         occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
         occupancyConfirmButton.click();
 
-        Assertions.assertEquals(expectedRoomAndGuestNumber, roomAndGuestNumber);  //Здесь заканчивается параметризированный метод
+        Assertions.assertEquals(roomsNumber, actualRoomsNumber);
+        Assertions.assertEquals(adultsNumber, actualAdultsNumber);
+        Assertions.assertEquals(childrenNumber, actualChildrenNumber);
     }
 
     /**
@@ -229,6 +225,28 @@ public class ParameterizedInputTest {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         return wait.until(ExpectedConditions
                 .presenceOfElementLocated(locator));
+    }
+
+    /**
+     * Make swipe on element.
+     *
+     * @param element      element that swiped
+     * @param startXOffset swipe start point X coordinate (offset on X axis in pixels from top left corner of element)
+     * @param startYOffset swipe start point Y coordinate (offset on Y axis in pixels from top left corner of element)
+     * @param endXOffset   swipe end point X coordinate (offset on X axis in pixels from top left corner of element)
+     * @param endYOffset   swipe end point Y coordinate (offset on X axis in pixels from top left corner of element)
+     */
+    private void makeSwipe(WebElement element, int startXOffset, int startYOffset, int endXOffset, int endYOffset) {
+        Point widgetLocation = element.getLocation(); //0,295
+        Point swipeStart = widgetLocation.moveBy(startXOffset, startYOffset); //380, 1050
+        Point swipeEnd = widgetLocation.moveBy(endXOffset, endYOffset); //380, 688
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipeAge = new Sequence(finger, 1);
+        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), swipeStart.x, swipeStart.y));
+        swipeAge.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(700), PointerInput.Origin.viewport(), swipeEnd.x, swipeEnd.y));
+        swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        driver.perform(List.of(swipeAge));
     }
 
     @AfterAll

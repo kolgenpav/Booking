@@ -57,6 +57,7 @@ public class InputTest {
         accommodationDestinationField.click();
         WebElement accommodationDestinationInput = getElementWithWait(By.id("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content"));
         accommodationDestinationInput.sendKeys(accommodationDestination);
+        //TODO Learn about suggested locator types: https://www.headspin.io/course-material/making-your-appium-tests-fast-repeatable-and-reliable
         WebElement accommodationDestinationPropose = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
         accommodationDestinationPropose.click();
         /*Close calendar view and return to main window*/
