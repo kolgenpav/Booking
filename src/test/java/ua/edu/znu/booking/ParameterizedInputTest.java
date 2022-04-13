@@ -37,7 +37,6 @@ public class ParameterizedInputTest {
 
     @BeforeAll
     public static void setUp() throws MalformedURLException {
-
         UiAutomator2Options options = new UiAutomator2Options()
                 .setPlatformVersion("10.0")
                 .setDeviceName("Android10Phone")
@@ -63,16 +62,16 @@ public class ParameterizedInputTest {
         accommodationDestinationField.click();
         WebElement accommodationDestinationInput = getElementWithWait(By.id("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content"));
         accommodationDestinationInput.sendKeys(accommodationDestination);
+        /*Use search by xpath because parent element has same id with another elements in view*/
         WebElement accommodationDestinationPropose = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
         accommodationDestinationPropose.click();
         /*Close calendar view* and return to main window*/
-        /*Implicit wait before calendar appearing*/
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
-        if (driver.findElements(By.id("com.booking:id/facet_date_picker_calendar")).size() != 0) {
+        if (getAllElementsWithWait(By.id("com.booking:id/facet_date_picker_calendar")).size() != 0) {
             getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
             driver.navigate().back();
         }
         accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
+        /*Nested element search by id instead search of the parent element by xpath*/
         WebElement accommodationDestinationFieldTextView = accommodationDestinationField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String destination = accommodationDestinationFieldTextView.getText();
         Assertions.assertEquals(accommodationDestination, destination);
@@ -91,40 +90,43 @@ public class ParameterizedInputTest {
     public void accommodationDatesTest(int startDateDaysShift, int endDateDaysShift) {
         WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         accommodationDatesField.click();
-        /*Implicit wait before calendar appearing*/
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
-        LocalDate startDate = LocalDate.now().plusDays(startDateDaysShift);
-        String startDateString = startDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        LocalDate endDate;
-        int startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
-        while (startDateElements == 0) {   //swipe if start date is absent
-            WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
-            makeSwipe(calendar, 480, 560, 480, 198);
-            startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
-        }
-        WebElement startDateElement = driver.findElement(AppiumBy.accessibilityId(startDateString));
-        startDateElement.click();
-        endDate = startDate.plusDays(endDateDaysShift);
-        String endDatePlusDaysShiftString = endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        int endDateElements = driver.findElements(AppiumBy.accessibilityId(endDatePlusDaysShiftString)).size();
-        while (endDateElements == 0) { //swipe if end date is absent
-            WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
-            makeSwipe(calendar, 480, 560, 480, 198);
-            endDateElements = driver.findElements(AppiumBy.accessibilityId(endDatePlusDaysShiftString)).size();
-        }
-        WebElement endDateElement = driver.findElement(AppiumBy.accessibilityId(endDatePlusDaysShiftString));
-        endDateElement.click();
+
+        LocalDate startDate = dateSelect(LocalDate.now(), startDateDaysShift);
+        LocalDate endDate = dateSelect(startDate, endDateDaysShift);
+
         WebElement accommodationDatesConfirmButton = getElementWithWait(By.id("com.booking:id/facet_date_picker_confirm"));
         accommodationDatesConfirmButton.click();
 
         /*Assert accommodation start date is now and end date is now + daysShift*/
         accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
+        /*Nested element search by id instead search of the parent element by xpath*/
         WebElement accommodationDatesFieldTextView = accommodationDatesField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String accommodationDates = accommodationDatesFieldTextView.getText();
         String expectedStartDateString = startDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
         String expectedEndDateString = endDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
         String expectedAccommodationDates = expectedStartDateString + " - " + expectedEndDateString;
         Assertions.assertEquals(expectedAccommodationDates, accommodationDates);
+    }
+
+    /**
+     * Select accommodation date in calendar.
+     *
+     * @param now           starting point for date shift (current date is recommended)
+     * @param dateDaysShift shift in days from starting point
+     * @return date selected
+     */
+    private LocalDate dateSelect(LocalDate now, int dateDaysShift) {
+        LocalDate startDate = now.plusDays(dateDaysShift);
+        String startDateString = startDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        int startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
+        while (startDateElements == 0) {   //swipe if start date is absent
+            WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+            makeSwipe(calendar, 480, 560, 480, 198);
+            startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
+        }
+        WebElement startDateElement = getElementWithWait(AppiumBy.accessibilityId(startDateString));
+        startDateElement.click();
+        return startDate;
     }
 
     /**
@@ -138,9 +140,10 @@ public class ParameterizedInputTest {
             "30, 30, 2, '< 1 рік:1 рік'",
             "10, 10, 3, '17 років:3 роки:< 1 рік'"
     })
+    //TODO check occupancyTest to improve
     public void occupancyTest(int roomsNumber, int adultsNumber, int childrenNumber, String childrenAges) {
         String[] ages = new String[0];
-        if(!"".equals(childrenAges)) {
+        if (!"".equals(childrenAges)) {
             ages = childrenAges.split(":");
         }
         if (childrenNumber != ages.length) {
@@ -153,9 +156,11 @@ public class ParameterizedInputTest {
         accommodationOccupancyField.click();
         /*Enter adults number*/
         WebElement adultsNumberAdd;
+        /*Use search by xpath because parent element has same id with another elements in view*/
         WebElement adultsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
         adultsNumberSubtract.click();
         for (int i = 0; i < adultsNumber - 1; i++) {
+            /*Use search by xpath because parent element has same id with another elements in view*/
             adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             adultsNumberAdd.click();
         }
@@ -167,11 +172,12 @@ public class ParameterizedInputTest {
                     break;
                 }
             }
+            /*Use search by xpath because parent element has same id with another elements in view*/
             WebElement childrenNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             childrenNumberAdd.click();
             for (int j = 0; j < ageIndex + 1; j++) {
                 /*Child age NumberPicker swipe*/
-                WebElement numberPicker = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
+                WebElement numberPicker = getElementWithWait(By.className("android.widget.NumberPicker"));
                 makeSwipe(numberPicker, 270, 350, 270, 225);
             }
 
@@ -180,15 +186,16 @@ public class ParameterizedInputTest {
 
             /*Assert child age equals the first child age parameter*/
             if (childrenNumber > 0) {
+                /*Use search by xpath because parent element has same id with another elements in view*/
                 WebElement childAgeInfo = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/androidx.recyclerview.widget.RecyclerView/android.widget.LinearLayout[" + (i + 1) + "]/android.widget.TextView[2]"));
                 String actualChildAge = childAgeInfo.getText();
                 Assertions.assertEquals(ages[i], actualChildAge);
             }
         }
 
-
         WebElement roomsNumberAdd;
         for (int i = 0; i < roomsNumber - 1; i++) {
+            /*Use search by xpath because parent element has same id with another elements in view*/
             roomsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             roomsNumberAdd.click();
         }
@@ -198,6 +205,7 @@ public class ParameterizedInputTest {
 
         /*Get from accommodation occupancy string rooms number, adults number and children number*/
         accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
+        /*Nested element search by id instead search of the parent element by xpath*/
         WebElement accommodationOccupancyFieldTextView = accommodationOccupancyField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String roomAndGuestNumber = accommodationOccupancyFieldTextView.getText();
         String[] roomsAndGuestsNumberWords = roomAndGuestNumber.split(" ");
@@ -209,17 +217,21 @@ public class ParameterizedInputTest {
         accommodationOccupancyField.click();
         WebElement roomsNumberSubtract;
         for (int i = 0; i < roomsNumber - 1; i++) {
+            /*Use search by xpath because parent element has same id with another elements in view*/
             roomsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
             roomsNumberSubtract.click();
         }
+        /*Use search by xpath because parent element has same id with another elements in view*/
         adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
         adultsNumberAdd.click();
         for (int i = 0; i < adultsNumber - 1; i++) {
+            /*Use search by xpath because parent element has same id with another elements in view*/
             adultsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
             adultsNumberSubtract.click();
         }
         WebElement childrenNumberSubtract;
         for (int i = 0; i < childrenNumber; i++) {
+            /*Use search by xpath because parent element has same id with another elements in view*/
             childrenNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
             childrenNumberSubtract.click();
         }
@@ -242,6 +254,18 @@ public class ParameterizedInputTest {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         return wait.until(ExpectedConditions
                 .presenceOfElementLocated(locator));
+    }
+
+    /**
+     * Find all elements by locator with explicit wait.
+     *
+     * @param locator UI element locator
+     * @return List with UI elements found
+     */
+    private List<WebElement> getAllElementsWithWait(By locator) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        return wait.until(ExpectedConditions
+                .presenceOfAllElementsLocatedBy(locator));
     }
 
     /**
