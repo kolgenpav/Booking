@@ -6,6 +6,9 @@ import io.appium.java_client.android.options.UiAutomator2Options;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -27,6 +30,7 @@ import java.util.List;
 /**
  * Test of input data entering.
  */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ParameterizedInputTest {
 
     private static AndroidDriver driver;
@@ -50,8 +54,9 @@ public class ParameterizedInputTest {
      * Check data entering for accommodation destination.
      */
 //    @Disabled
+    @Order(1)
     @ParameterizedTest(name = "accommodation destination ={0}")
-    @ValueSource(strings = {"Лондон", "Вестерос"})
+    @ValueSource(strings = {"Лондон", "Вестерос", "Варшава", "Париж", "Вашингтон"})
     public void accommodationDestinationTest(String accommodationDestination) {
         /*Accommodation destination input*/
         WebElement accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
@@ -77,6 +82,7 @@ public class ParameterizedInputTest {
      * Check accommodation start and end dates entering.
      */
 //    @Disabled
+    @Order(2)
     @ParameterizedTest(name = "start date shift ={0}, end date shift={1}")
     @CsvSource({
             "0, 30",
@@ -124,26 +130,28 @@ public class ParameterizedInputTest {
     /**
      * Check rooms number, adults number, children number and first child age entering.
      */
-    //TODO Learn how use an array for parameters - see VarargsAggregator https://github.com/junit-team/junit5/issues/2256
 //    @Disabled
+    @Order(3)
     @ParameterizedTest(name = "rooms: {0}, adults: {1}, children: {2}, child age: {3}")
     @CsvSource({
             "1, 1, 0, ''",
-            "1, 30, 10, '< 1 рік'",
-            "10, 10, 1, '17 років'"
+            "30, 30, 2, '< 1 рік:1 рік'",
+            "10, 10, 3, '17 років:3 роки:< 1 рік'"
     })
-    public void occupancyTest(int roomsNumber, int adultsNumber, int childrenNumber, String childAge) {
-        String[] childrenAges = {"< 1 рік", "1 рік", "2 роки", "3 роки", "4 роки", "5 років", "6 років", "7 років", "8 років", "9 років", "10 років", "11 років", "12 років", "13 років", "14 років", "15 років", "16 років", "17 років"};
-        int ageIndex = -1;
-        for (int k = 0; k < childrenAges.length; k++) {
-            if (childAge.equals(childrenAges[k])) {
-                ageIndex = k;
-                break;
-            }
+    public void occupancyTest(int roomsNumber, int adultsNumber, int childrenNumber, String childrenAges) {
+        String[] ages = new String[0];
+        if(!"".equals(childrenAges)) {
+            ages = childrenAges.split(":");
         }
+        if (childrenNumber != ages.length) {
+            throw new IllegalArgumentException("The number of children should be equal to the number of their ages");
+        }
+        String[] childrenAgesArray = {"< 1 рік", "1 рік", "2 роки", "3 роки", "4 роки", "5 років", "6 років", "7 років", "8 років", "9 років", "10 років", "11 років", "12 років", "13 років", "14 років", "15 років", "16 років", "17 років"};
+        int ageIndex = -1;
 
         WebElement accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         accommodationOccupancyField.click();
+        /*Enter adults number*/
         WebElement adultsNumberAdd;
         WebElement adultsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
         adultsNumberSubtract.click();
@@ -151,7 +159,14 @@ public class ParameterizedInputTest {
             adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             adultsNumberAdd.click();
         }
+        /*Enter children number and age*/
         for (int i = 0; i < childrenNumber; i++) {
+            for (int k = 0; k < childrenAgesArray.length; k++) {
+                if (ages[i].equals(childrenAgesArray[k])) {
+                    ageIndex = k;
+                    break;
+                }
+            }
             WebElement childrenNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             childrenNumberAdd.click();
             for (int j = 0; j < ageIndex + 1; j++) {
@@ -159,16 +174,18 @@ public class ParameterizedInputTest {
                 WebElement numberPicker = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.NumberPicker"));
                 makeSwipe(numberPicker, 270, 350, 270, 225);
             }
+
             WebElement childAgeInputConfirmButton = getElementWithWait(By.id("android:id/button1"));
             childAgeInputConfirmButton.click();
+
+            /*Assert child age equals the first child age parameter*/
+            if (childrenNumber > 0) {
+                WebElement childAgeInfo = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/androidx.recyclerview.widget.RecyclerView/android.widget.LinearLayout[" + (i + 1) + "]/android.widget.TextView[2]"));
+                String actualChildAge = childAgeInfo.getText();
+                Assertions.assertEquals(ages[i], actualChildAge);
+            }
         }
 
-        /*Assert child age equals the first child age parameter*/
-        if (childrenNumber > 0) {
-            WebElement childAgeInfo = getElementWithWait(By.id("com.booking:id/group_config_child_age_row_button"));
-            String actualChildAge = childAgeInfo.getText();
-            Assertions.assertEquals(childAge, actualChildAge);
-        }
 
         WebElement roomsNumberAdd;
         for (int i = 0; i < roomsNumber - 1; i++) {
