@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.PointerInput;
@@ -25,7 +26,6 @@ import java.util.List;
 /**
  * Test of input data entering.
  */
-//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class InputTest {
 
     private static AndroidDriver driver;
@@ -48,7 +48,6 @@ public class InputTest {
     /**
      * Check data entering for accommodation destination.
      */
-//    @Order(1)
     @Test
     public void accommodationDestinationTest() {
         String accommodationDestination = "Лондон";
@@ -60,8 +59,7 @@ public class InputTest {
         WebElement accommodationDestinationPropose = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
         accommodationDestinationPropose.click();
         /*Close calendar view and return to main window*/
-        if (getAllElementsWithWait(By.id("com.booking:id/facet_date_picker_calendar")).size() != 0) {
-            getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+        if (isElementPresent(By.id("com.booking:id/facet_date_picker_calendar"))) {
             driver.navigate().back();
         }
         accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
@@ -75,19 +73,13 @@ public class InputTest {
      * Check accommodation start and end dates entering.
      */
 //    @Disabled
-//    @Order(2)
     @Test
     public void accommodationDatesTest() {
         WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         accommodationDatesField.click();
         LocalDate currentDate = LocalDate.now();
-        String currentDateString = currentDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        WebElement startDate = getElementWithWait(AppiumBy.accessibilityId(currentDateString));
-        startDate.click();
-        LocalDate currentDatePlus5 = currentDate.plusDays(5);
-        String currentDatePlus5String = currentDatePlus5.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        WebElement endDate = getElementWithWait(AppiumBy.accessibilityId(currentDatePlus5String));
-        endDate.click();
+        dateSelect(currentDate);
+        dateSelect(currentDate.plusDays(5));
         WebElement accommodationDatesConfirmButton = getElementWithWait(By.id("com.booking:id/facet_date_picker_confirm"));
         accommodationDatesConfirmButton.click();
 
@@ -97,16 +89,26 @@ public class InputTest {
         WebElement accommodationDatesFieldTextView = accommodationDatesField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String accommodationDates = accommodationDatesFieldTextView.getText();
         String expectedCurrentDateString = currentDate.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
-        String expectedCurrentDatePlus5String = currentDatePlus5.format(DateTimeFormatter.ofPattern("E, dd MMMM"));
+        String expectedCurrentDatePlus5String = currentDate.plusDays(5).format(DateTimeFormatter.ofPattern("E, dd MMMM"));
         String expectedAccommodationDates = expectedCurrentDateString + " - " + expectedCurrentDatePlus5String;
         Assertions.assertEquals(expectedAccommodationDates, accommodationDates);
+    }
+
+    /**
+     * Select accommodation date in calendar.
+     *
+     * @param date starting point for date select (current date is recommended)
+     */
+    private void dateSelect(LocalDate date) {
+        String currentDateString = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        WebElement startDate = getElementWithWait(AppiumBy.accessibilityId(currentDateString));
+        startDate.click();
     }
 
     /**
      * Check rooms number, adults number, children number and first child age entering.
      */
 //    @Disabled
-//    @Order(3)
     @Test
     public void occupancyTest() {
         String expectedRoomAndGuestNumber = "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина";
@@ -123,16 +125,7 @@ public class InputTest {
 
         /*Child age NumberPicker swipe*/
         WebElement source = getElementWithWait(By.className("android.widget.NumberPicker"));
-        Point numberPickerLocation = source.getLocation();   //99,433
-        Point swipeStart = numberPickerLocation.moveBy(270, 350);   //370,780
-        Point swipeEnd = numberPickerLocation.moveBy(270, 100);     //370,475
-        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-        Sequence swipeAge = new Sequence(finger, 1);
-        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), swipeStart.x, swipeStart.y));
-        swipeAge.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(700), PointerInput.Origin.viewport(), swipeEnd.x, swipeEnd.y));
-        swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-        driver.perform(List.of(swipeAge));
+        makeSwipe(source);
 
         WebElement childAgeInputConfirmButton = getElementWithWait(By.id("android:id/button1"));
         childAgeInputConfirmButton.click();
@@ -156,6 +149,24 @@ public class InputTest {
     }
 
     /**
+     * Make swipe on element.
+     *
+     * @param element element that swiped
+     */
+    private void makeSwipe(WebElement element) {
+        Point numberPickerLocation = element.getLocation();   //99,433
+        Point swipeStart = numberPickerLocation.moveBy(270, 350);   //370,780
+        Point swipeEnd = numberPickerLocation.moveBy(270, 100);     //370,475
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipeAge = new Sequence(finger, 1);
+        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), swipeStart.x, swipeStart.y));
+        swipeAge.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(700), PointerInput.Origin.viewport(), swipeEnd.x, swipeEnd.y));
+        swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        driver.perform(List.of(swipeAge));
+    }
+
+    /**
      * Find element by locator with explicit wait.
      *
      * @param locator UI element locator
@@ -168,14 +179,19 @@ public class InputTest {
     }
 
     /**
-     * Find all elements by locator with explicit wait.
-     * @param locator UI element locator
-     * @return List with UI elements found
+     * Check if element present.
+     *
+     * @param locator element locator
+     * @return true if element present false otherwise
      */
-    private List<WebElement> getAllElementsWithWait(By locator) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        return wait.until(ExpectedConditions
-                .presenceOfAllElementsLocatedBy(locator));
+    protected boolean isElementPresent(By locator) {
+        try {
+            Thread.sleep(3000);
+            driver.findElement(locator);
+            return true;
+        } catch (NoSuchElementException | InterruptedException ex) {
+            return false;
+        }
     }
 
     @AfterAll
