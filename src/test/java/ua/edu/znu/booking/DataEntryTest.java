@@ -6,13 +6,11 @@ import io.appium.java_client.android.options.UiAutomator2Options;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.PointerInput;
@@ -30,8 +28,7 @@ import java.util.List;
 /**
  * Test of input data entering.
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ParameterizedInputTest {
+public class DataEntryTest {
 
     private static AndroidDriver driver;
 
@@ -45,29 +42,28 @@ public class ParameterizedInputTest {
         URL remoteUrl = new URL("http://127.0.0.1:4723/wd/hub");
         driver = new AndroidDriver(remoteUrl, options);
 
-        WebElement registrationCloseButton = new ParameterizedInputTest().getElementWithWait(AppiumBy.accessibilityId("Перейти вгору"));
+        /*Close registration prompt window*/
+        WebElement registrationCloseButton = new DataEntryTest().getElementWithWait(AppiumBy.accessibilityId("Перейти вгору"));
         registrationCloseButton.click();
     }
 
     /**
      * Check data entering for accommodation destination.
      */
-//    @Disabled
-    @Order(1)
     @ParameterizedTest(name = "accommodation destination ={0}")
     @ValueSource(strings = {"Лондон", "Вестерос", "Варшава", "Париж", "Вашингтон"})
     public void accommodationDestinationTest(String accommodationDestination) {
-        /*Accommodation destination input*/
         WebElement accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
         accommodationDestinationField.click();
         WebElement accommodationDestinationInput = getElementWithWait(By.id("com.booking:id/facet_with_bui_free_search_booking_header_toolbar_content"));
         accommodationDestinationInput.sendKeys(accommodationDestination);
+        /*Need to avoid "The element not linked to the same object in DOM anymore" error*/
+        getElementWithWait(By.id("com.booking:id/facet_disambiguation_content"));
         /*Use search by xpath because parent element has same id with another elements in view*/
         WebElement accommodationDestinationPropose = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]"));
         accommodationDestinationPropose.click();
         /*Close calendar view* and return to main window*/
-        if (getAllElementsWithWait(By.id("com.booking:id/facet_date_picker_calendar")).size() != 0) {
-            getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+        if (isElementPresent(By.id("com.booking:id/facet_date_picker_calendar"))) {
             driver.navigate().back();
         }
         accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
@@ -80,8 +76,6 @@ public class ParameterizedInputTest {
     /**
      * Check accommodation start and end dates entering.
      */
-//    @Disabled
-    @Order(2)
     @ParameterizedTest(name = "start date shift ={0}, end date shift={1}")
     @CsvSource({
             "0, 30",
@@ -90,10 +84,10 @@ public class ParameterizedInputTest {
     public void accommodationDatesTest(int startDateDaysShift, int endDateDaysShift) {
         WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         accommodationDatesField.click();
-
-        LocalDate startDate = dateSelect(LocalDate.now(), startDateDaysShift);
-        LocalDate endDate = dateSelect(startDate, endDateDaysShift);
-
+        LocalDate startDate = LocalDate.now().plusDays(startDateDaysShift);
+        dateSelect(startDate);
+        LocalDate endDate = startDate.plusDays(endDateDaysShift);
+        dateSelect(endDate);
         WebElement accommodationDatesConfirmButton = getElementWithWait(By.id("com.booking:id/facet_date_picker_confirm"));
         accommodationDatesConfirmButton.click();
 
@@ -111,60 +105,94 @@ public class ParameterizedInputTest {
     /**
      * Select accommodation date in calendar.
      *
-     * @param now           starting point for date shift (current date is recommended)
-     * @param dateDaysShift shift in days from starting point
-     * @return date selected
+     * @param date starting point for date select (current date plus DaysShift is recommended)
      */
-    private LocalDate dateSelect(LocalDate now, int dateDaysShift) {
-        LocalDate startDate = now.plusDays(dateDaysShift);
-        String startDateString = startDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
-        int startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
-        while (startDateElements == 0) {   //swipe if start date is absent
-            WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+    private void dateSelect(LocalDate date) {
+        String dateString = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+        WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
+        /* Swipe if start date is absent*/
+        while (driver.findElements(AppiumBy.accessibilityId(dateString)).size() == 0) {
             makeSwipe(calendar, 480, 560, 480, 198);
-            startDateElements = driver.findElements(AppiumBy.accessibilityId(startDateString)).size();
         }
-        WebElement startDateElement = getElementWithWait(AppiumBy.accessibilityId(startDateString));
-        startDateElement.click();
-        return startDate;
+        WebElement dateElement = getElementWithWait(AppiumBy.accessibilityId(dateString));
+        dateElement.click();
     }
 
     /**
      * Check rooms number, adults number, children number and first child age entering.
+     * Children number set as children ages number.
      */
-//    @Disabled
-    @Order(3)
-    @ParameterizedTest(name = "rooms: {0}, adults: {1}, children: {2}, child age: {3}")
+    @ParameterizedTest(name = "rooms: {0}, adults: {1}, children ages: {3}")
     @CsvSource({
-            "1, 1, 0, ''",
-            "30, 30, 2, '< 1 рік:1 рік'",
-            "10, 10, 3, '17 років:3 роки:< 1 рік'"
+            "1, 1, ''",
+            "30, 30, '< 1 рік:1 рік'",
+            "10, 10, '17 років:3 роки:< 1 рік'"
     })
-    //TODO check occupancyTest to improve
-    public void occupancyTest(int roomsNumber, int adultsNumber, int childrenNumber, String childrenAges) {
-        String[] ages = new String[0];
-        if (!"".equals(childrenAges)) {
-            ages = childrenAges.split(":");
-        }
-        if (childrenNumber != ages.length) {
-            throw new IllegalArgumentException("The number of children should be equal to the number of their ages");
-        }
-        String[] childrenAgesArray = {"< 1 рік", "1 рік", "2 роки", "3 роки", "4 роки", "5 років", "6 років", "7 років", "8 років", "9 років", "10 років", "11 років", "12 років", "13 років", "14 років", "15 років", "16 років", "17 років"};
-        int ageIndex = -1;
-
+    public void occupancyTest(int roomsNumber, int adultsNumber, String childrenAges) {
         WebElement accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         accommodationOccupancyField.click();
-        /*Enter adults number*/
-        WebElement adultsNumberAdd;
+        /*Enter adults number - we have to decrease adult number by 1 because of default value is 2*/
         /*Use search by xpath because parent element has same id with another elements in view*/
         WebElement adultsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
         adultsNumberSubtract.click();
+        /*Use search by xpath because parent element has same id with another elements in view*/
+        WebElement adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
         for (int i = 0; i < adultsNumber - 1; i++) {
-            /*Use search by xpath because parent element has same id with another elements in view*/
-            adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
             adultsNumberAdd.click();
         }
+
         /*Enter children number and age*/
+        int childrenNumber = childrenDataEntry(childrenAges);
+
+        /*Enter rooms number*/
+        /*Use search by xpath because parent element has same id with another elements in view*/
+        WebElement roomsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        for (int i = 0; i < roomsNumber - 1; i++) {
+            roomsNumberAdd.click();
+        }
+
+        WebElement occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
+        occupancyConfirmButton.click();
+
+        /*Get from accommodation occupancy string rooms number, adults number and children number*/
+        accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
+        /*Nested element search by id instead search of the parent element by xpath*/
+        WebElement accommodationOccupancyFieldTextView = accommodationOccupancyField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
+        String roomAndGuestNumber = accommodationOccupancyFieldTextView.getText();
+        String[] roomsAndGuestsNumberWords = roomAndGuestNumber.split(" ");
+        int actualRoomsNumber = Integer.parseInt(roomsAndGuestsNumberWords[0]);
+        int actualAdultsNumber = Integer.parseInt(roomsAndGuestsNumberWords[3]);
+        int actualChildrenNumber = Integer.parseInt(roomsAndGuestsNumberWords[6]);
+
+        accommodationOccupancyField.click();
+        setInitialNumbers(roomsNumber, adultsNumber, childrenNumber);
+
+        occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
+        occupancyConfirmButton.click();
+
+        Assertions.assertEquals(roomsNumber, actualRoomsNumber);
+        Assertions.assertEquals(adultsNumber, actualAdultsNumber);
+        Assertions.assertEquals(childrenNumber, actualChildrenNumber);
+    }
+
+    /**
+     * Enter children data.
+     *
+     * @param childrenAges children ages string
+     * @return number of children
+     */
+    private int childrenDataEntry(String childrenAges) {
+        String[] childrenAgesArray = {"< 1 рік", "1 рік", "2 роки", "3 роки", "4 роки", "5 років", "6 років", "7 років", "8 років", "9 років", "10 років", "11 років", "12 років", "13 років", "14 років", "15 років", "16 років", "17 років"};
+        int ageIndex = -1;
+        /*If no children ages[] must be empty, not empty String ""*/
+        String[] ages = new String[0];
+        /*For childrenAges not equal empty String ""*/
+        if (!"".equals(childrenAges)) {
+            ages = childrenAges.split(":");
+        }
+        int childrenNumber = ages.length;
+
+        /*Enter children number and ages*/
         for (int i = 0; i < childrenNumber; i++) {
             for (int k = 0; k < childrenAgesArray.length; k++) {
                 if (ages[i].equals(childrenAgesArray[k])) {
@@ -184,65 +212,49 @@ public class ParameterizedInputTest {
             WebElement childAgeInputConfirmButton = getElementWithWait(By.id("android:id/button1"));
             childAgeInputConfirmButton.click();
 
-            /*Assert child age equals the first child age parameter*/
-            if (childrenNumber > 0) {
-                /*Use search by xpath because parent element has same id with another elements in view*/
-                WebElement childAgeInfo = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/androidx.recyclerview.widget.RecyclerView/android.widget.LinearLayout[" + (i + 1) + "]/android.widget.TextView[2]"));
-                String actualChildAge = childAgeInfo.getText();
-                Assertions.assertEquals(ages[i], actualChildAge);
-            }
-        }
-
-        WebElement roomsNumberAdd;
-        for (int i = 0; i < roomsNumber - 1; i++) {
+            /*Assert children ages to children ages from list*/
             /*Use search by xpath because parent element has same id with another elements in view*/
-            roomsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
-            roomsNumberAdd.click();
+            WebElement childAgeInfo = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/androidx.recyclerview.widget.RecyclerView/android.widget.LinearLayout[" + (i + 1) + "]/android.widget.TextView[2]"));
+            String actualChildAge = childAgeInfo.getText();
+            Assertions.assertEquals(ages[i], actualChildAge);
         }
+        return childrenNumber;
+    }
 
-        WebElement occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
-        occupancyConfirmButton.click();
-
-        /*Get from accommodation occupancy string rooms number, adults number and children number*/
-        accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
-        /*Nested element search by id instead search of the parent element by xpath*/
-        WebElement accommodationOccupancyFieldTextView = accommodationOccupancyField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
-        String roomAndGuestNumber = accommodationOccupancyFieldTextView.getText();
-        String[] roomsAndGuestsNumberWords = roomAndGuestNumber.split(" ");
-        int actualRoomsNumber = Integer.parseInt(roomsAndGuestsNumberWords[0]);
-        int actualAdultsNumber = Integer.parseInt(roomsAndGuestsNumberWords[3]);
-        int actualChildrenNumber = Integer.parseInt(roomsAndGuestsNumberWords[6]);
-
-        /*Subtract addition for rooms number, adults number and children number*/
-        accommodationOccupancyField.click();
+    /**
+     * Set numbers of rooms, adults and children to initial (default) values.
+     *
+     * @param roomsNumber    number of rooms
+     * @param adultsNumber   number of adults
+     * @param childrenNumber number of children
+     */
+    private void setInitialNumbers(int roomsNumber, int adultsNumber, int childrenNumber) {
         WebElement roomsNumberSubtract;
         for (int i = 0; i < roomsNumber - 1; i++) {
             /*Use search by xpath because parent element has same id with another elements in view*/
             roomsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[1]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
             roomsNumberSubtract.click();
         }
-        /*Use search by xpath because parent element has same id with another elements in view*/
-        adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
-        adultsNumberAdd.click();
+
+        WebElement adultsNumberSubtract;
         for (int i = 0; i < adultsNumber - 1; i++) {
             /*Use search by xpath because parent element has same id with another elements in view*/
             adultsNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
             adultsNumberSubtract.click();
         }
+        /*We have to increase adult number by 1 because of default value is 2*/
+        /*Use search by xpath because parent element has same id with another elements in view*/
+        WebElement adultsNumberAdd = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/android.widget.LinearLayout[2]/android.widget.TextView[3]"));
+        adultsNumberAdd.click();
+
         WebElement childrenNumberSubtract;
         for (int i = 0; i < childrenNumber; i++) {
             /*Use search by xpath because parent element has same id with another elements in view*/
             childrenNumberSubtract = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout[3]/android.widget.LinearLayout[2]/android.widget.TextView[1]"));
             childrenNumberSubtract.click();
         }
-
-        occupancyConfirmButton = getElementWithWait(By.id("com.booking:id/group_config_apply_button"));
-        occupancyConfirmButton.click();
-
-        Assertions.assertEquals(roomsNumber, actualRoomsNumber);
-        Assertions.assertEquals(adultsNumber, actualAdultsNumber);
-        Assertions.assertEquals(childrenNumber, actualChildrenNumber);
     }
+
 
     /**
      * Find element by locator with explicit wait.
@@ -254,18 +266,6 @@ public class ParameterizedInputTest {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         return wait.until(ExpectedConditions
                 .presenceOfElementLocated(locator));
-    }
-
-    /**
-     * Find all elements by locator with explicit wait.
-     *
-     * @param locator UI element locator
-     * @return List with UI elements found
-     */
-    private List<WebElement> getAllElementsWithWait(By locator) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        return wait.until(ExpectedConditions
-                .presenceOfAllElementsLocatedBy(locator));
     }
 
     /**
@@ -288,6 +288,22 @@ public class ParameterizedInputTest {
         swipeAge.addAction(finger.createPointerMove(Duration.ofMillis(700), PointerInput.Origin.viewport(), swipeEnd.x, swipeEnd.y));
         swipeAge.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
         driver.perform(List.of(swipeAge));
+    }
+
+    /**
+     * Check if element present.
+     *
+     * @param locator element locator
+     * @return true if element present false otherwise
+     */
+    protected boolean isElementPresent(By locator) {
+        try {
+            Thread.sleep(3000);
+            driver.findElement(locator);
+            return true;
+        } catch (NoSuchElementException | InterruptedException ex) {
+            return false;
+        }
     }
 
     @AfterAll
