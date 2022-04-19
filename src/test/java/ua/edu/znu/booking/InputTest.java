@@ -49,7 +49,7 @@ public class InputTest {
      * Check data entering for accommodation destination.
      */
     @Test
-    public void accommodationDestinationTest() {
+    void accommodationDestinationTest() {
         String accommodationDestination = "Лондон";
         WebElement accommodationDestinationField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_destination"));
         accommodationDestinationField.click();
@@ -75,7 +75,7 @@ public class InputTest {
      * Check accommodation start and end dates entering.
      */
     @Test
-    public void accommodationDatesTest() {
+    void accommodationDatesTest() {
         WebElement accommodationDatesField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_dates"));
         accommodationDatesField.click();
         LocalDate currentDate = LocalDate.now();
@@ -110,7 +110,7 @@ public class InputTest {
      * Check rooms number, adults number, children number and first child age entering.
      */
     @Test
-    public void occupancyTest() {
+    void occupancyTest() {
         String expectedRoomAndGuestNumber = "2 номери " + '\u00b7' + " 3 дорослих " + '\u00b7' + " 1 дитина";
 
         WebElement accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
@@ -191,7 +191,7 @@ public class InputTest {
      * @param locator element locator
      * @return true if element present false otherwise
      */
-    protected boolean isElementPresent(By locator) {
+    private boolean isElementPresent(By locator) {
         try {
             Thread.sleep(3000);
             driver.findElement(locator);
