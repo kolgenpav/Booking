@@ -121,15 +121,15 @@ public class DataEntryTest {
     /**
      * Check rooms number, adults number, children number and first child age entering.
      * Children number set as children ages number.
+     * Number of rooms must be less than or equal to the number of adults
+     * to avoid automatically increasing the number of adults.
      */
     @ParameterizedTest(name = "rooms: {0}, adults: {1}, children ages: {3}")
     @CsvSource({
-//            "1, 1, ''",
-//            "30, 30, '< 1 рік:1 рік'",
-//            "5, 2, '17 років:3 роки:< 1 рік:4 роки:7 років:17 років:3 роки:< 1 рік:4 роки:7 років'"
-            "5, 2, '1 рік:2 роки:< 1 рік:3 роки:1 рік:1 рік:2 роки:< 1 рік:3 роки:1 рік'"
+            "1, 1, ''",
+            "2, 2, '< 1 рік'",
+            "30, 30, '17 років:3 роки:< 1 рік:4 роки:7 років:17 років:3 роки:< 1 рік:4 роки:7 років'"
     })
-    //TODO When rooms number = adults number and adding next room program auto adds the adults number
     void occupancyTest(int roomsNumber, int adultsNumber, String childrenAges) {
         WebElement accommodationOccupancyField = getElementWithWait(By.id("com.booking:id/facet_search_box_accommodation_occupancy"));
         accommodationOccupancyField.click();
