@@ -6,6 +6,7 @@ import io.appium.java_client.android.options.UiAutomator2Options;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -26,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Test of input data entering.
+ * Positive test of input data entering.
  */
 public class DataEntryTest {
 
@@ -49,6 +50,8 @@ public class DataEntryTest {
 
     /**
      * Check data entering for accommodation destination.
+     *
+     * @param accommodationDestination accommodation destination
      */
     @ParameterizedTest(name = "accommodation destination ={0}")
     @ValueSource(strings = {"Лондон", "Вестерос"})
@@ -110,7 +113,7 @@ public class DataEntryTest {
     private void dateSelect(LocalDate date) {
         String dateString = date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
         WebElement calendar = getElementWithWait(By.id("com.booking:id/facet_date_picker_calendar"));
-        /* Swipe if start date is absent*/
+        /* Swipe if date is absent*/
         while (driver.findElements(AppiumBy.accessibilityId(dateString)).size() == 0) {
             makeSwipe(calendar, 480, 560, 480, 198);
         }
@@ -119,10 +122,14 @@ public class DataEntryTest {
     }
 
     /**
-     * Check rooms number, adults number, children number and first child age entering.
-     * Children number set as children ages number.
+     * Check rooms number, adults number, children number and ages entering.
+     * Children number set as children ages quantity.
      * Number of rooms must be less than or equal to the number of adults
      * to avoid automatically increasing the number of adults.
+     *
+     * @param roomsNumber number of rooms
+     * @param adultsNumber number of adults
+     * @param childrenAges number of children
      */
     @ParameterizedTest(name = "rooms: {0}, adults: {1}, children ages: {3}")
     @CsvSource({
@@ -143,7 +150,7 @@ public class DataEntryTest {
             adultsNumberAdd.click();
         }
 
-        /*Enter children number and age*/
+        /*Enter children number and ages*/
         int childrenNumber = childrenDataEntry(childrenAges);
 
         /*Enter rooms number*/
@@ -188,7 +195,7 @@ public class DataEntryTest {
         int ageIndex = -1;
         /*If no children ages[] must be empty, not empty String ""*/
         String[] ages = new String[0];
-        /*For childrenAges not equal empty String ""*/
+        /*For childrenAges that not equal empty String ""*/
         if (!"".equals(childrenAges)) {
             ages = childrenAges.split(":");
         }
@@ -214,11 +221,10 @@ public class DataEntryTest {
             WebElement childAgeInputConfirmButton = getElementWithWait(By.id("android:id/button1"));
             childAgeInputConfirmButton.click();
 
-            /*Assert children ages to children ages from list*/
-            /*Make swipe to display child age at the end of list*/
+            /*Assert expected children ages to actual children ages from list*/
             WebElement childrenAgesList = getElementWithWait(By.id("com.booking:id/group_config_children_ages_section"));
             WebElement childAgeInfo;
-            /* Swipe if child age is absent*/
+            /*If child age is absent (only 3 child fit to screen), make swipe*/
             if (i < 4) {
                 while (driver.findElements(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout[2]/androidx.recyclerview.widget.RecyclerView/android.widget.LinearLayout[" + (i + 1) + "]/android.widget.TextView[2]")).size() == 0) {
                     makeSwipe(childrenAgesList, 380, 500, 380, 277);
