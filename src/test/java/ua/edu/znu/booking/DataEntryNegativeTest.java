@@ -7,9 +7,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
@@ -74,7 +71,6 @@ public class DataEntryNegativeTest {
         WebElement accommodationDestinationFieldTextView = accommodationDestinationField.findElement(By.id("com.booking:id/facet_search_box_basic_field_label"));
         String destination = accommodationDestinationFieldTextView.getText();
 
-        //TODO REturn to main screen
         Exception exception = assertThrowsExactly(IllegalArgumentException.class, () -> {
             if (!accommodationDestination.equals(destination)) {
                 throw new IllegalArgumentException("Destination not found");
@@ -99,7 +95,12 @@ public class DataEntryNegativeTest {
         WebElement popupView = getElementWithWait(By.xpath("/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/androidx.appcompat.widget.LinearLayoutCompat/android.widget.FrameLayout/android.widget.ScrollView/android.widget.LinearLayout/android.widget.TextView"));
         String popupMessage = popupView.getText();
         Assertions.assertTrue(popupMessage.startsWith("Дата вашого виїзду настає через 30 ночей"));
-        //TODO REturn to main screen
+        WebElement closeButton = getElementWithWait(By.id("android:id/button1"));
+        closeButton.click();
+        /*Close calendar view and return to main window*/
+        if (isElementPresent(By.id("com.booking:id/facet_date_picker_calendar"))) {
+            driver.navigate().back();
+        }
     }
 
     /**
